@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.nio.file.FileSystem;
 
+import com.google.common.cache.Cache;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -29,7 +31,9 @@ import net.sandius.rembulan.runtime.LuaFunction;
 import net.sandius.rembulan.runtime.SchedulingContext;
 import net.sandius.rembulan.runtime.SchedulingContextFactory;
 import net.wizardsoflua.lua.classes.LuaClassLoader;
+import net.wizardsoflua.lua.classes.entity.PlayerApi;
 import net.wizardsoflua.lua.classes.entity.PlayerClass;
+import net.wizardsoflua.lua.classes.entity.PlayerProxy;
 import net.wizardsoflua.lua.compiler.PatchedCompilerChunkLoader;
 import net.wizardsoflua.lua.dependency.ModuleDependencies;
 import net.wizardsoflua.lua.module.blocks.BlocksModule;
@@ -256,13 +260,22 @@ public class SpellProgram {
     TableLib.installInto(stateContext, env);
   }
 
-  public void replacePlayerInstance(EntityPlayerMP player) {
+  public void replacePlayerInstance(EntityPlayerMP newPlayer) {
     if (this.owner.getCommandSenderEntity() instanceof EntityPlayer) {
-      if (this.owner.getCommandSenderEntity().getUniqueID().equals(player.getUniqueID())) {
-        this.owner = player;
+      if (this.owner.getCommandSenderEntity().getUniqueID().equals(newPlayer.getUniqueID())) {
+        this.owner = newPlayer;
       }
     }
     PlayerClass playerClass = luaClassLoader.getLuaClassOfType(PlayerClass.class);
-    playerClass.replaceDelegate(player);
+    Cache<EntityPlayerMP, PlayerProxy<PlayerApi<EntityPlayerMP>, EntityPlayerMP>> cache =
+        playerClass.getCache();
+    for (EntityPlayer oldPlayer : cache.asMap().keySet()) {
+      if (oldPlayer.getUniqueID().equals(newPlayer.getUniqueID())) {
+        PlayerProxy<PlayerApi<EntityPlayerMP>, EntityPlayerMP> oldValue =
+            cache.asMap().remove(oldPlayer);
+        cache.put(newPlayer, oldValue);
+        oldValue.setDelegate(newPlayer);
+      }
+    }
   }
 }
