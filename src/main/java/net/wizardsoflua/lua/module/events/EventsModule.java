@@ -20,7 +20,7 @@ public class EventsModule extends DelegatingProxy<EventHandlers> {
   }
 
   public EventsModule(LuaClassLoader classLoader, EventHandlers delegate) {
-    super(classLoader, null, delegate);
+    super(classLoader, delegate);
     ConnectFunction connectFunction = new ConnectFunction();
     addImmutable(connectFunction.getName(), connectFunction);
     FireFunction fireFunction = new FireFunction();
