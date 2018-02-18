@@ -220,6 +220,9 @@ public class Converters {
     if (type == Long.class || type == long.class) {
       return castToLong(luaObject);
     }
+    if (type == Boolean.class || type == boolean.class) {
+      return luaObject;
+    }
     if (Enum.class.isAssignableFrom(type)) {
       String name = (String) Conversions.javaRepresentationOf(luaObject);
       return enumConverter.toJava(type, name);
